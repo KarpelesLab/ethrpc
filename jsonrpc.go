@@ -33,6 +33,21 @@ func NewRequest(method string, params ...any) *Request {
 	return req
 }
 
+// NewRequestMap makes a new [Request] fit to use with methods like Send, using named parameters.
+func NewRequestMap(method string, params map[string]any) *Request {
+	if params == nil {
+		// make sure it is not nil
+		params = make(map[string]any)
+	}
+	req := &Request{
+		JsonRpc: "2.0",
+		Method:  method,
+		Params:  params,
+		Id:      atomic.AddUint64(&rpcId, 1),
+	}
+	return req
+}
+
 // HTTPRequest returns a [http.Request] for the given json-rpc request.
 func (req *Request) HTTPRequest(ctx context.Context, host string) (*http.Request, error) {
 	reqEnc, err := json.Marshal(req)
