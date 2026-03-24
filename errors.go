@@ -2,6 +2,5 @@ package ethrpc
 
 import "errors"
 
-var (
-	ErrNoAvailableServer = errors.New("no available server")
-)
+// ErrNoAvailableServer is returned by [Evaluate] when no servers are provided or reachable.
+var ErrNoAvailableServer = errors.New("no available server")

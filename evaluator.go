@@ -6,9 +6,14 @@ import (
 	"time"
 )
 
+// RPCList is a list of [RPC] endpoints that implements [Handler].
 type RPCList []*RPC
 
+// DoCtx performs a JSON-RPC call using the first server in the list.
 func (r RPCList) DoCtx(ctx context.Context, method string, args ...any) (json.RawMessage, error) {
+	if len(r) == 0 {
+		return nil, ErrNoAvailableServer
+	}
 	// TODO might want to be able to fallback to the next server in list or other fancy things...
 	return r[0].DoCtx(ctx, method, args...)
 }

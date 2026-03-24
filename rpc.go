@@ -20,7 +20,8 @@ import (
 
 var rpcId uint64
 
-// TODO support ws protocol
+// RPC represents a connection to an Ethereum JSON-RPC endpoint.
+// It supports HTTP transport with optional basic authentication and method overrides.
 type RPC struct {
 	host       string
 	lag        time.Duration // how long it takes for this endpoint to respond to eth_blockNumber
@@ -83,6 +84,7 @@ func (r *RPC) DoNamedCtx(ctx context.Context, method string, args map[string]any
 	return r.SendCtx(ctx, NewRequest(method, args))
 }
 
+// SendCtx sends a raw [Request] to the RPC endpoint using the provided context.
 func (r *RPC) SendCtx(ctx context.Context, req *Request) (json.RawMessage, error) {
 	// JSON RPC over http is simple
 	//log.Printf("[RPC] → %s %v", method, args)
@@ -148,6 +150,7 @@ func (r *RPC) To(target any, method string, args ...any) error {
 	return json.Unmarshal(v, target)
 }
 
+// ForwardOptions configures how [RPC.Forward] writes the response.
 type ForwardOptions struct {
 	Pretty bool
 	Cache  time.Duration
@@ -160,7 +163,7 @@ func (r *RPC) Forward(ctx context.Context, rw http.ResponseWriter, req *Request,
 		rw.Header().Set("Content-Type", "application/json")
 		rw.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		if opts != nil && opts.Cache > 0 {
-			rw.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", opts.Cache/time.Second))
+			rw.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", opts.Cache/time.Second))
 			rw.Header().Set("Expires", time.Now().Add(opts.Cache).Format(time.RFC1123))
 		}
 		enc := json.NewEncoder(rw)
@@ -217,7 +220,7 @@ func (r *RPC) Forward(ctx context.Context, rw http.ResponseWriter, req *Request,
 	rw.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 
 	if opts != nil && opts.Cache > 0 {
-		rw.Header().Set("Cache-Control", fmt.Sprintf("public; max-age=%d", opts.Cache/time.Second))
+		rw.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", opts.Cache/time.Second))
 		rw.Header().Set("Expires", time.Now().Add(opts.Cache).Format(time.RFC1123))
 	}
 

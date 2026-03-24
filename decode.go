@@ -80,6 +80,7 @@ func ReadTo(target any) func(v json.RawMessage, e error) error {
 	}
 }
 
+// ReadAs decodes the return value into the specified generic type T.
 func ReadAs[T any](v json.RawMessage, e error) (T, error) {
 	var v2 T
 	if e != nil {

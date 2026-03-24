@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 )
 
+// Request represents a JSON-RPC 2.0 request object.
 type Request struct {
 	JsonRpc string `json:"jsonrpc"` // 2.0
 	Method  string `json:"method"`
@@ -80,6 +81,7 @@ func (r *Request) makeError(e error) *ResponseIntf {
 	return res
 }
 
+// Response represents a JSON-RPC 2.0 response with a raw JSON result.
 type Response struct {
 	JsonRpc string          `json:"jsonrpc"` // 2.0
 	Result  json.RawMessage `json:"result"`
@@ -87,7 +89,8 @@ type Response struct {
 	Id      any             `json:"id"`
 }
 
-// RPCResponseIntf is same as rpcResponse except Result is a any
+// ResponseIntf is a JSON-RPC 2.0 response where Result is an arbitrary type
+// rather than [json.RawMessage], allowing direct encoding of Go values.
 type ResponseIntf struct {
 	JsonRpc string       `json:"jsonrpc"` // 2.0
 	Result  any          `json:"result"`
@@ -95,6 +98,7 @@ type ResponseIntf struct {
 	Id      any          `json:"id"`
 }
 
+// ErrorObject represents a JSON-RPC 2.0 error returned by the server.
 type ErrorObject struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
