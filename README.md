@@ -1,4 +1,4 @@
-[![GoDoc](https://godoc.org/github.com/ModChain/ethrpc?status.svg)](https://godoc.org/github.com/ModChain/ethrpc)
+[![GoDoc](https://godoc.org/github.com/KarpelesLab/ethrpc?status.svg)](https://godoc.org/github.com/KarpelesLab/ethrpc)
 
 # ethrpc
 

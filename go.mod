@@ -1,4 +1,4 @@
-module github.com/ModChain/ethrpc
+module github.com/KarpelesLab/ethrpc
 
 go 1.22.2
 
