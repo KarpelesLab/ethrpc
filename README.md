@@ -1,4 +1,5 @@
 [![GoDoc](https://godoc.org/github.com/KarpelesLab/ethrpc?status.svg)](https://godoc.org/github.com/KarpelesLab/ethrpc)
+[![Coverage Status](https://coveralls.io/repos/github/KarpelesLab/ethrpc/badge.svg?branch=master)](https://coveralls.io/github/KarpelesLab/ethrpc?branch=master)
 
 # ethrpc
 
