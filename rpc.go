@@ -81,7 +81,7 @@ func (r *RPC) DoCtx(ctx context.Context, method string, args ...any) (json.RawMe
 
 // DoNamedCtx performs a RPC request using named arguments, taking an optional context that can be cancelled to stop the request
 func (r *RPC) DoNamedCtx(ctx context.Context, method string, args map[string]any) (json.RawMessage, error) {
-	return r.SendCtx(ctx, NewRequest(method, args))
+	return r.SendCtx(ctx, NewRequestMap(method, args))
 }
 
 // SendCtx sends a raw [Request] to the RPC endpoint using the provided context.
