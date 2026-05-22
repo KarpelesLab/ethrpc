@@ -26,8 +26,17 @@ func Evaluate(ctx context.Context, servers ...string) (Handler, error) {
 		return nil, ErrNoAvailableServer
 	}
 	if len(servers) == 1 {
-		// only 1 server, return it
-		return New(servers[0]), nil
+		// only 1 server: probe it so we honor the docstring contract
+		// ("return a list of servers that work")
+		r := New(servers[0])
+		start := time.Now()
+		res, err := ReadUint64(r.DoCtx(ctx, "eth_blockNumber"))
+		if err != nil {
+			return nil, err
+		}
+		r.lag = time.Since(start)
+		r.block = res
+		return r, nil
 	}
 
 	// make sure to cancel any pending request if we end

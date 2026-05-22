@@ -78,3 +78,17 @@ func TestEvaluateMultipleServers(t *testing.T) {
 		t.Errorf("got %d, want 10", val)
 	}
 }
+
+// Regression: Evaluate with a single failing server must error out instead of
+// returning a dead handler.
+func TestEvaluateSingleServerFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	defer srv.Close()
+
+	_, err := Evaluate(context.Background(), srv.URL)
+	if err == nil {
+		t.Fatal("expected evaluate to fail against a broken server")
+	}
+}
