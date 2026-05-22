@@ -258,3 +258,71 @@ func TestRPCBasicAuth(t *testing.T) {
 		t.Errorf("got %q, want %q", s, "ok")
 	}
 }
+
+// Regression: a `null` response body must not nil-deref.
+func TestRPCSendCtxNullBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("null"))
+	}))
+	defer srv.Close()
+
+	rpc := New(srv.URL)
+	_, err := rpc.Do("eth_blockNumber")
+	// We tolerate either a clean error or a nil result, but never a panic.
+	_ = err
+}
+
+// Regression: HTTP non-2xx with a JSON-RPC error body should surface as the RPC error.
+func TestRPCSendCtxHTTPErrorWithJSONRPC(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0",
+			"error":   map[string]any{"code": -32600, "message": "Invalid Request"},
+			"id":      1,
+		})
+	}))
+	defer srv.Close()
+
+	rpc := New(srv.URL)
+	_, err := rpc.Do("bogus")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	var eo *ErrorObject
+	if !errors.As(err, &eo) {
+		t.Fatalf("expected ErrorObject in chain, got %T: %v", err, err)
+	}
+	if eo.Code != -32600 {
+		t.Errorf("error code = %d, want -32600", eo.Code)
+	}
+}
+
+// Regression: HTTP non-2xx with a non-JSON body should produce a clear "HTTP NNN" error.
+func TestRPCSendCtxHTTPErrorWithHTML(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		w.Write([]byte("<html>502 Bad Gateway</html>"))
+	}))
+	defer srv.Close()
+
+	rpc := New(srv.URL)
+	_, err := rpc.Do("eth_blockNumber")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if got := err.Error(); !contains(got, "HTTP 502") {
+		t.Errorf("error %q should mention HTTP 502", got)
+	}
+}
+
+func contains(s, sub string) bool {
+	for i := 0; i+len(sub) <= len(s); i++ {
+		if s[i:i+len(sub)] == sub {
+			return true
+		}
+	}
+	return false
+}

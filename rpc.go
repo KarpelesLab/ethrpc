@@ -124,12 +124,29 @@ func (r *RPC) SendCtx(ctx context.Context, req *Request) (json.RawMessage, error
 	}
 	defer resp.Body.Close()
 
-	// decode response
-	reader := json.NewDecoder(resp.Body)
-	var res *Response
-	err = reader.Decode(&res)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode response to %s: %w", req.Method, err)
+		return nil, fmt.Errorf("error reading response for %s: %w", req.Method, err)
+	}
+
+	// Some servers return JSON-RPC errors over HTTP 4xx/5xx. Try to decode either way;
+	// if decoding fails on a non-2xx, surface the HTTP status with a body snippet.
+	var res Response
+	decodeErr := json.Unmarshal(body, &res)
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if decodeErr == nil && res.Error != nil {
+			return nil, fmt.Errorf("RPC error during %s: %w", req.Method, res.Error)
+		}
+		snippet := body
+		if len(snippet) > 200 {
+			snippet = snippet[:200]
+		}
+		return nil, fmt.Errorf("HTTP %d during %s: %s", resp.StatusCode, req.Method, bytes.TrimSpace(snippet))
+	}
+
+	if decodeErr != nil {
+		return nil, fmt.Errorf("failed to decode response to %s: %w", req.Method, decodeErr)
 	}
 	if res.Error != nil {
 		//log.Printf("[RPC] ← Error: %s", res.Error.Error())
