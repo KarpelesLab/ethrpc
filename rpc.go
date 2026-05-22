@@ -193,13 +193,12 @@ func (r *RPC) Forward(ctx context.Context, rw http.ResponseWriter, req *Request,
 		if params, ok := req.Params.([]any); ok {
 			res, err := f.CallArg(ctx, params...)
 			if err != nil {
-				rw.WriteHeader(http.StatusInternalServerError)
+				// JSON-RPC convention: transport remains 200, error lives in the body
 				enc.Encode(req.makeError(err))
 				return
 			}
 			enc.Encode(&ResponseIntf{JsonRpc: "2.0", Result: res, Id: req.Id})
 		} else {
-			rw.WriteHeader(http.StatusBadRequest)
 			enc.Encode(req.makeError(errors.New("function only supports positional arguments")))
 		}
 		return
