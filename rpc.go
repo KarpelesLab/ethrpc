@@ -231,6 +231,9 @@ func (r *RPC) Forward(ctx context.Context, rw http.ResponseWriter, req *Request,
 	defer resp.Body.Close()
 
 	for k, v := range resp.Header {
+		if isHopByHopHeader(k) {
+			continue
+		}
 		rw.Header()[k] = v
 	}
 	rw.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -264,4 +267,21 @@ func (r *RPC) Forward(ctx context.Context, rw http.ResponseWriter, req *Request,
 
 	rw.WriteHeader(resp.StatusCode)
 	io.Copy(rw, resp.Body)
+}
+
+// hop-by-hop headers per RFC 7230 §6.1 — must not be forwarded by intermediaries.
+var hopByHopHeaders = map[string]struct{}{
+	"Connection":          {},
+	"Keep-Alive":          {},
+	"Proxy-Authenticate":  {},
+	"Proxy-Authorization": {},
+	"Te":                  {},
+	"Trailer":             {},
+	"Transfer-Encoding":   {},
+	"Upgrade":             {},
+}
+
+func isHopByHopHeader(name string) bool {
+	_, ok := hopByHopHeaders[http.CanonicalHeaderKey(name)]
+	return ok
 }
