@@ -3,19 +3,39 @@ package ethrpc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 )
 
 // RPCList is a list of [RPC] endpoints that implements [Handler].
 type RPCList []*RPC
 
-// DoCtx performs a JSON-RPC call using the first server in the list.
+// DoCtx performs a JSON-RPC call against the servers in the list, failing over
+// to the next server on transport errors. JSON-RPC error responses (e.g.
+// "method not found") are returned immediately without failover, since they
+// represent a valid response from the server.
 func (r RPCList) DoCtx(ctx context.Context, method string, args ...any) (json.RawMessage, error) {
 	if len(r) == 0 {
 		return nil, ErrNoAvailableServer
 	}
-	// TODO might want to be able to fallback to the next server in list or other fancy things...
-	return r[0].DoCtx(ctx, method, args...)
+	var lastErr error
+	for _, srv := range r {
+		res, err := srv.DoCtx(ctx, method, args...)
+		if err == nil {
+			return res, nil
+		}
+		lastErr = err
+		// JSON-RPC errors are valid responses — don't retry against another server
+		var eo *ErrorObject
+		if errors.As(err, &eo) {
+			return nil, err
+		}
+		// Respect context cancellation
+		if ctx.Err() != nil {
+			return nil, err
+		}
+	}
+	return nil, lastErr
 }
 
 // Evaluate will call the various servers in the list and return a list of servers that work (if any)
